@@ -52,6 +52,7 @@
     <Compile Include="DirectoryService.cs" />
     <Compile Include="FileProcessor.cs" />
     <Compile Include="FileSendService.cs" />
+    <Compile Include="FormService.cs" />
     <Compile Include="IDirectoryProcessor.cs" />
     <Compile Include="IFileProcessor.cs" />
     <Compile Include="Program.cs" />

@@ -37,11 +37,34 @@ namespace FileServer.Test
         [InlineData("GET /hello.txt HTTP/1.1")]
         [InlineData("GET /hi.pdf HTTP/1.0")]
         [InlineData("GET /hi.png HTTP/1.0")]
+        [InlineData("POST /hi.png HTTP/1.0")]
         public void Cant_Process(string getRequest)
         {
             var mockFileSearch = new MockFileProcessor();
             mockFileSearch.StubExists(true);
             var properties = new ServerProperties(@"c:/",
+                5555, new HttpResponse(), new ServerTime(),
+                new MockPrinter(),
+                new Readers
+                {
+                    DirectoryProcess = new MockDirectoryProcessor(),
+                    FileProcess = mockFileSearch
+                });
+            var fileSendService = new FileSendService();
+
+            Assert.False(fileSendService.CanProcessRequest(getRequest, properties));
+        }
+
+        [Theory]
+        [InlineData("GET /hello.txt HTTP/1.1")]
+        [InlineData("GET /hi.pdf HTTP/1.0")]
+        [InlineData("GET /hi.png HTTP/1.0")]
+        [InlineData("POST /hi.png HTTP/1.0")]
+        public void Cant_Process_Null_Path(string getRequest)
+        {
+            var mockFileSearch = new MockFileProcessor();
+            mockFileSearch.StubExists(true);
+            var properties = new ServerProperties(null,
                 5555, new HttpResponse(), new ServerTime(),
                 new MockPrinter(),
                 new Readers

@@ -25,6 +25,8 @@ namespace FileServer.Core
             errorPage.Append(@"</body>");
             errorPage.Append(@"</html>");
             httpResponse.Body = errorPage.ToString();
+            httpResponse.ContentLength =
+                Encoding.ASCII.GetByteCount(httpResponse.Body);
 
             return httpResponse;
         }

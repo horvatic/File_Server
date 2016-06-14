@@ -76,6 +76,9 @@
     <Compile Include="FileSendServiceTest.cs" />
     <Compile Include="FormServiceTest.cs" />
     <Compile Include="FtpserviceTest.cs" />
+    <Compile Include="HelloWorldServiceTest.cs" />
+    <Compile Include="InlinePdfServiceTest.cs" />
+    <Compile Include="InlinePngServiceTest.cs" />
     <Compile Include="MockDirectoryProcessor.cs" />
     <Compile Include="MockFileProcessor.cs" />
     <Compile Include="MockMainServer.cs" />

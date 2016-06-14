@@ -54,8 +54,11 @@
     <Compile Include="FileSendService.cs" />
     <Compile Include="FormService.cs" />
     <Compile Include="Ftpservice.cs" />
+    <Compile Include="HelloWorldService.cs" />
     <Compile Include="IDirectoryProcessor.cs" />
     <Compile Include="IFileProcessor.cs" />
+    <Compile Include="InlinePdfService.cs" />
+    <Compile Include="InlinePngService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Readers.cs" />

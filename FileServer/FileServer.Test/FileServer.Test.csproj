@@ -79,6 +79,7 @@
     <Compile Include="HelloWorldServiceTest.cs" />
     <Compile Include="InlinePdfServiceTest.cs" />
     <Compile Include="InlinePngServiceTest.cs" />
+    <Compile Include="InlineTextDocServiceTest.cs" />
     <Compile Include="MockDirectoryProcessor.cs" />
     <Compile Include="MockFileProcessor.cs" />
     <Compile Include="MockMainServer.cs" />

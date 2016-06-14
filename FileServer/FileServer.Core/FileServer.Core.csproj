@@ -59,6 +59,7 @@
     <Compile Include="IFileProcessor.cs" />
     <Compile Include="InlinePdfService.cs" />
     <Compile Include="InlinePngService.cs" />
+    <Compile Include="InlineTextDocService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Readers.cs" />

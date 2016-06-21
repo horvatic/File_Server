@@ -1,4 +1,4 @@
-"# Vatic File Server" 
+"#Vatic-File-Server" 
 
 A server that can be used to upload, and download from the server. It uses the Vatic Server Core API, thus making it flexable to change.
 Some features include:

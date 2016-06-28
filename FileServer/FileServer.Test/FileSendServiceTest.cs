@@ -131,7 +131,34 @@ namespace FileServer.Test
             zSocket.VerifySend(GetByte("Content-Type: application/octet-stream\r\n"),
                 GetByteCount("Content-Type: application/octet-stream\r\n"));
         }
+        [Fact]
+        public void Send_Data_Error()
+        {
+            var zSocket = new MockZSocket();
+            var guid = Guid.NewGuid();
 
+            
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true)
+                .StubGetFileStream(null)
+                .StubFileSize(2);
+
+            var properties = new ServerProperties(@"c:/",
+                5555, new ServerTime(),
+                new MockPrinter(),
+                new Readers
+                {
+                    DirectoryProcess = new MockDirectoryProcessor(),
+                    FileProcess = mockFileSearch
+                });
+            var fileSendService = new FileSendService();
+
+            var statusCode = fileSendService
+                .ProcessRequest("GET /" + guid + ".tmp HTTP/1.1",
+                    new HttpResponse(zSocket), properties);
+            Assert.Equal("200 OK", statusCode);
+           
+        }
 
         [Fact]
         public void Cant_Send_Data_Protected_Data()

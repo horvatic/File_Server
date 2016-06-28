@@ -54,11 +54,18 @@ namespace FileServer.Core
                     .GetFileStream(serverProperties.CurrentDir + requestItem))
                 {
                     var buffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = fileStream.Read(buffer, 0,
-                        1024)) > 0)
+                    try
                     {
-                        httpResponse.SendBody(buffer, bytesRead);
+                        int bytesRead;
+                        while ((bytesRead = fileStream.Read(buffer, 0,
+                            1024)) > 0)
+                        {
+                            httpResponse.SendBody(buffer, bytesRead);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // ignored
                     }
                 }
 

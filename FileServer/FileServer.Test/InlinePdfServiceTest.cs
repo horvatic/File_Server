@@ -166,6 +166,35 @@ namespace FileServer.Test
             zSocket.VerifySend(GetByte("Content-Type: application/octet-stream\r\n"),
                 GetByteCount("Content-Type: application/octet-stream\r\n"));
         }
+        [Fact]
+        public void Send_Data_Error()
+        {
+            var zSocket = new MockZSocket();
+            var guid = Guid.NewGuid();
+
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true)
+                .StubGetFileStream(null)
+                .StubFileSize(10000001);
+
+            var properties = new ServerProperties(@"c:/",
+                5555, new ServerTime(),
+                new MockPrinter(),
+                new Readers
+                {
+                    DirectoryProcess = new MockDirectoryProcessor(),
+                    FileProcess = mockFileSearch
+                });
+            var inlinePdfService = new InlinePdfService();
+
+            var statusCode = inlinePdfService
+                .ProcessRequest("GET /" + guid + ".pdf HTTP/1.1",
+                    new HttpResponse(zSocket),
+                    properties);
+            
+            Assert.Equal("200 OK", statusCode);
+            
+        }
         private int GetByteCount(string message)
         {
             return Encoding.ASCII.GetByteCount(message);

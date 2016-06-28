@@ -9,7 +9,7 @@ namespace FileServer.Core
         public bool CanProcessRequest(string request,
             ServerProperties serverProperties)
         {
-            var readers = (Readers)serverProperties
+            var readers = (Readers) serverProperties
                 .ServiceSpecificObjectsWrapper;
             var requestItem = CleanRequest(request);
             return serverProperties.CurrentDir != null &&
@@ -24,7 +24,7 @@ namespace FileServer.Core
             IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
-            var readers = (Readers)serverProperties
+            var readers = (Readers) serverProperties
                 .ServiceSpecificObjectsWrapper;
             var requestItem = CleanRequest(request);
             httpResponse.SendHeaders(new List<string>
@@ -47,11 +47,18 @@ namespace FileServer.Core
                                + requestItem))
             {
                 var buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = fileStream.Read(buffer, 0,
-                    1024)) > 0)
+                try
                 {
-                    httpResponse.SendBody(buffer, bytesRead);
+                    int bytesRead;
+                    while ((bytesRead = fileStream.Read(buffer, 0,
+                        1024)) > 0)
+                    {
+                        httpResponse.SendBody(buffer, bytesRead);
+                    }
+                }
+                catch (Exception)
+                {
+                    // ignored
                 }
             }
             return "200 OK";

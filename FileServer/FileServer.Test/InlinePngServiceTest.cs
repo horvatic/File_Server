@@ -108,6 +108,34 @@ namespace FileServer.Test
             zSocket.VerifySend(GetByte("Content-Type: image/png\r\n"),
                 GetByteCount("Content-Type: image/png\r\n"));
         }
+        [Fact]
+        public void Send_Error_Data()
+        {
+            var zSocket = new MockZSocket();
+            var guid = Guid.NewGuid();
+            
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true)
+                .StubGetFileStream(null)
+                .StubFileSize(2);
+
+            var properties = new ServerProperties(@"c:/",
+                5555, new ServerTime(),
+                new MockPrinter(),
+                new Readers
+                {
+                    DirectoryProcess = new MockDirectoryProcessor(),
+                    FileProcess = mockFileSearch
+                });
+            var inlinePngService = new InlinePngService();
+
+            var statusCode = inlinePngService
+                .ProcessRequest("GET /" + guid + ".png HTTP/1.1",
+                    new HttpResponse(zSocket),
+                    properties);
+            Assert.Equal("200 OK", statusCode);
+            
+        }
         private int GetByteCount(string message)
         {
             return Encoding.ASCII.GetByteCount(message);

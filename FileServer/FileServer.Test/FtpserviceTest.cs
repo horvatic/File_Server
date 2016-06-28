@@ -73,7 +73,6 @@ namespace FileServer.Test
             var mockFileSearch = new MockFileProcessor();
             var mockDirectoySearch = new MockDirectoryProcessor()
                 .StubExists(true);
-            mockFileSearch.StubExists(true);
             var properties = new ServerProperties(@"c:/",
                 5555,
                 new ServerTime(),

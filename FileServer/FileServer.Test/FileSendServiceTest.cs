@@ -20,8 +20,8 @@ namespace FileServer.Test
         [InlineData("GET /hi.go HTTP/1.0")]
         public void Can_Process(string getRequest)
         {
-            var mockFileSearch = new MockFileProcessor();
-            mockFileSearch.StubExists(true);
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true);
             var properties = new ServerProperties(@"c:/",
                 5555, new ServerTime(),
                 new MockPrinter(),
@@ -42,8 +42,8 @@ namespace FileServer.Test
         [InlineData("POST /hi.png HTTP/1.0")]
         public void Cant_Process(string getRequest)
         {
-            var mockFileSearch = new MockFileProcessor();
-            mockFileSearch.StubExists(true);
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true);
             var properties = new ServerProperties(@"c:/",
                 5555, new ServerTime(),
                 new MockPrinter(),
@@ -64,8 +64,8 @@ namespace FileServer.Test
         [InlineData("POST /hi.png HTTP/1.0")]
         public void Cant_Process_Null_Path(string getRequest)
         {
-            var mockFileSearch = new MockFileProcessor();
-            mockFileSearch.StubExists(true);
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true);
             var properties = new ServerProperties(null,
                 5555, new ServerTime(),
                 new MockPrinter(),

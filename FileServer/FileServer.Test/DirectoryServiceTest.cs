@@ -37,8 +37,8 @@ namespace FileServer.Test
         [InlineData("GET /form HTTP/1.1")]
         public void Cant_Process_form(string getRequest)
         {
-            var mockFileSearch = new MockFileProcessor();
-            mockFileSearch.StubExists(true);
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true);
             var properties = new ServerProperties(@"c:/",
                 5555, new ServerTime(),
                 new MockPrinter(),

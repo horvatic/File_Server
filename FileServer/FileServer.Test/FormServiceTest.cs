@@ -94,8 +94,8 @@ namespace FileServer.Test
         public void Send_Data_Post_Request()
         {
             var zSocket = new MockZSocket();
-            var mockFileSearch = new MockFileProcessor();
-            mockFileSearch.StubExists(true);
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true);
             var properties = new ServerProperties(@"c:/",
                 5555, new ServerTime(),
                 new MockPrinter(),

@@ -135,7 +135,6 @@ namespace FileServer.Test
                 .StubGetFileStream(readStream)
                 .StubFileSize(10000001);
 
-            mockFileSearch.StubExists(true);
             var properties = new ServerProperties(@"c:/",
                 5555, new ServerTime(),
                 new MockPrinter(),

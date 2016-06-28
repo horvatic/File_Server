@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using Server.Core;
 
@@ -24,43 +25,87 @@ namespace FileServer.Core
                        && request.Contains("GET /"));
         }
 
-        public IHttpResponse ProcessRequest(string request,
+        public string ProcessRequest(string request,
             IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
             var reader = (Readers) serverProperties
                 .ServiceSpecificObjectsWrapper;
             var requestItem = CleanRequest(request);
-            if (!requestItem.EndsWith(".vaticToMp4"))
-            {
-                httpResponse.Body = HtmlHeader() +
-                                    @"<video width=""320"" height=""240"" controls>" +
-                                    @"<source src=""http://127.0.0.1:" + serverProperties.Port + "/" +
-                                    requestItem.Substring(1) + ".vaticToMp4" +
-                                    @""" type=""video/mp4"">" +
-                                    "</video>"
-                                    + HtmlTail();
-                httpResponse.HttpStatusCode = "200 OK";
-                httpResponse.CacheControl = "no-cache";
-                httpResponse.ContentType = "text/html";
-                httpResponse.ContentLength = Encoding
-                    .ASCII.GetByteCount(httpResponse.Body);
-            }
-            else
-            {
-                httpResponse.FilePath = serverProperties.CurrentDir
-                                        + requestItem.Substring(1).Replace(".vaticToMp4", "");
-                httpResponse.Filename = requestItem.Remove(0, requestItem.LastIndexOf('/') + 1)
-                    .Replace(".vaticToMp4", "");
-                httpResponse.HttpStatusCode = "200 OK";
-                httpResponse.CacheControl = "no-cache";
-                httpResponse.ContentType = "video/mp4";
-                httpResponse.ContentDisposition = "inline";
-                httpResponse.ContentLength = reader
-                    .FileProcess.FileSize(httpResponse.FilePath);
-            }
+            return !requestItem.EndsWith(".vaticToMp4")
+                ? SendHtml(requestItem, serverProperties, httpResponse)
+                : SendVideo(requestItem, serverProperties, httpResponse,
+                    reader);
+        }
 
-            return httpResponse;
+        private string SendHtml(string requestItem,
+            ServerProperties serverProperties,
+            IHttpResponse httpResponse)
+        {
+            var html = HtmlHeader() +
+                       @"<video width=""320"" height=""240"" controls>" +
+                       @"<source src=""http://127.0.0.1:" + serverProperties.Port + "/" +
+                       requestItem.Substring(1) + ".vaticToMp4" +
+                       @""" type=""video/mp4"">" +
+                       "</video>"
+                       + HtmlTail();
+            httpResponse.SendHeaders(new List<string>
+            {
+                "HTTP/1.1 200 OK\r\n",
+                "Cache-Control: no-cache\r\n",
+                "Content-Type: text/html\r\n",
+                "Content-Length: "
+                + (Encoding.ASCII.GetByteCount(html)) +
+                "\r\n\r\n"
+            });
+
+            httpResponse.SendBody(Encoding
+                .ASCII.GetBytes(html),
+                Encoding.ASCII.GetByteCount(html));
+            return "200 OK";
+        }
+
+        private string SendVideo(string requestItem,
+            ServerProperties serverProperties,
+            IHttpResponse httpResponse,
+            Readers reader)
+        {
+            var filePath = serverProperties.CurrentDir
+                           + requestItem.Substring(1).Replace(".vaticToMp4", "");
+            httpResponse.SendHeaders(new List<string>
+            {
+                "HTTP/1.1 200 OK\r\n",
+                "Cache-Control: no-cache\r\n",
+                "Content-Type: video/mp4\r\n",
+                "Content-Disposition: inline"
+                + "; filename = "
+                + requestItem.Remove(0,
+                    requestItem.LastIndexOf('/') + 1)
+                + "\r\n",
+                "Content-Length: "
+                + reader
+                    .FileProcess.FileSize(filePath) +
+                "\r\n\r\n"
+            });
+            using (var fileStream = reader.FileProcess
+                .GetFileStream(filePath))
+            {
+                var buffer = new byte[1024];
+                try
+                {
+                    int bytesRead;
+                    while ((bytesRead = fileStream.Read(buffer, 0,
+                        1024)) > 0)
+                    {
+                        httpResponse.SendBody(buffer, bytesRead);
+                    }
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+            }
+            return "200 OK";
         }
 
         private string CleanRequest(string request)

@@ -87,17 +87,16 @@ namespace FileServer.Core
             if (!VaildDrive(cleanHomeDir, io)) return null;
             var endPoint = new IPEndPoint((IPAddress.Loopback), port);
             var zSocket = new DefaultZSocket(endPoint);
-            var properties = new ServerProperties(cleanHomeDir, 
-                port, new HttpResponse(), new ServerTime(), io,
+            var properties = new ServerProperties(cleanHomeDir,
+                port, new ServerTime(), io,
                 new Readers
                 {
                     FileProcess = new FileProcessor(),
                     DirectoryProcess = new DirectoryProcessor()
                 });
-            return new MainServer(zSocket, properties, 
+            return new MainServer(zSocket, properties,
                 new HttpServiceFactory(new Service404()),
-                new DefaultRequestProcessor(), 
-                new DefaultSender(), 
+                new DefaultRequestProcessor(),
                 new List<string>() { "FileServer.Core" },
                  new List<Assembly>() { Assembly.GetExecutingAssembly() });
         }
@@ -110,16 +109,15 @@ namespace FileServer.Core
             var zSocket = new DefaultZSocket(endPoint);
             var properties = new ServerProperties(null,
                 portConverted,
-                new HttpResponse(), new ServerTime(), io,
+                new ServerTime(), io,
                 new Readers
                 {
-                    FileProcess =  new FileProcessor(),
+                    FileProcess = new FileProcessor(),
                     DirectoryProcess = new DirectoryProcessor()
                 });
-            return new MainServer(zSocket, properties, 
-                new HttpServiceFactory(new Service404()), 
-                new DefaultRequestProcessor(), 
-                new DefaultSender(),
+            return new MainServer(zSocket, properties,
+                new HttpServiceFactory(new Service404()),
+                new DefaultRequestProcessor(),
                 new List<string>() { "FileServer.Core" },
                  new List<Assembly>() { Assembly.GetExecutingAssembly() });
         }

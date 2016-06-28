@@ -21,7 +21,7 @@ namespace FileServer.Test
         {
             var serverProperties =
                 new ServerProperties(null,
-                    5555, new HttpResponse(), new ServerTime(),
+                    5555, new ServerTime(),
                     new MockPrinter());
             var helloWorldService = new HelloWorldService();
             Assert.True(helloWorldService
@@ -38,7 +38,6 @@ namespace FileServer.Test
         {
             var serverProperties =
                 new ServerProperties(currentDir, 5555,
-                    new HttpResponse(),
                     new ServerTime(), new MockPrinter());
             var helloWorldService = new HelloWorldService();
             Assert.False(helloWorldService
@@ -48,6 +47,7 @@ namespace FileServer.Test
         [Fact]
         public void OutPuts_Hello_World()
         {
+            var zSocket = new MockZSocket();
             var correctOutput = new StringBuilder();
             correctOutput.Append(@"<!DOCTYPE html>");
             correctOutput.Append(@"<html>");
@@ -56,16 +56,39 @@ namespace FileServer.Test
             correctOutput.Append(@"<h1>Hello World</h1>");
             correctOutput.Append(@"</body>");
             correctOutput.Append(@"</html>");
-            var httpPackage = new HttpResponse();
             var serverProperties =
                 new ServerProperties(null, 5555,
-                    new HttpResponse(), new ServerTime(),
+                    new ServerTime(),
                     new MockPrinter());
             var helloWorldService = new HelloWorldService();
-            httpPackage =
-                (HttpResponse) helloWorldService
-                    .ProcessRequest("", httpPackage, serverProperties);
-            Assert.Equal(correctOutput.ToString(), httpPackage.Body);
+            var statusCode = helloWorldService
+                    .ProcessRequest("", new HttpResponse(zSocket), 
+                    serverProperties);
+
+            zSocket.VerifySend(GetByte("HTTP/1.1 200 OK\r\n"),
+                GetByteCount("HTTP/1.1 200 OK\r\n"));
+            zSocket.VerifySend(GetByte("Cache-Control: no-cache\r\n"),
+                GetByteCount("Cache-Control: no-cache\r\n"));
+            zSocket.VerifySend(GetByte("Content-Type: text/html\r\n"),
+                GetByteCount("Content-Type: text/html\r\n"));
+            zSocket.VerifySend(GetByte("Content-Length: "
+                + GetByteCount(correctOutput.ToString())
+                + "\r\n\r\n"),
+                GetByteCount("Content-Length: "
+                + GetByteCount(correctOutput.ToString())
+                + "\r\n\r\n"));
+
+            zSocket.VerifySend(GetByte(correctOutput.ToString()),
+                GetByteCount(correctOutput.ToString()));
+        }
+        private int GetByteCount(string message)
+        {
+            return Encoding.ASCII.GetByteCount(message);
+        }
+
+        private byte[] GetByte(string message)
+        {
+            return Encoding.ASCII.GetBytes(message);
         }
     }
 }

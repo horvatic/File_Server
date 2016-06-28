@@ -37,24 +37,15 @@ namespace FileServer.Test
             return returnVal;
         }
 
-        public int Send(string message)
+        public int Send(byte[] packet, int size)
         {
-            return _mock.Object.Send(message);
+            return _mock.Object.Send(packet, size);
         }
 
-        public void SendFile(string message)
+        public void VerifySend(byte[] packet, int size)
         {
-            _mock.Object.SendFile(message);
-        }
-
-        public void VerifySend(string message)
-        {
-            _mock.Verify(m => m.Send(message), Times.AtLeastOnce);
-        }
-
-        public void VerifySendFile(string message)
-        {
-            _mock.Verify(m => m.SendFile(message), Times.AtLeastOnce);
+            _mock.Verify(m => m.Send(packet, size),
+                Times.AtLeastOnce);
         }
 
         public void VerifyNoAccept()
@@ -67,9 +58,9 @@ namespace FileServer.Test
             _mock.Verify(m => m.Accept(), Times.Once);
         }
 
-        public void VerifyClose()
+        public void VerifyCloseN(int closed)
         {
-            _mock.Verify(m => m.Close(), Times.Once);
+            _mock.Verify(m => m.Close(), Times.Exactly(closed));
         }
 
         public void VerifyReceive()
@@ -84,7 +75,9 @@ namespace FileServer.Test
 
         public MockZSocket StubSentToReturn(int value)
         {
-            _mock.Setup(m => m.Send(It.IsAny<string>())).Returns(value);
+            _mock.Setup(m => m.Send(It.IsAny<byte[]>(),
+                It.IsAny<int>()))
+                .Returns(value);
             return this;
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using FileServer.Core;
 using Moq;
 
@@ -18,6 +19,11 @@ namespace FileServer.Test
             return _mock.Object.Exists(path);
         }
 
+        public FileStream GetFileStream(string path)
+        {
+            return _mock.Object.GetFileStream(path);
+        }
+
         public long FileSize(string path)
         {
             if (path == "c:/pagefile.sys")
@@ -26,9 +32,17 @@ namespace FileServer.Test
             }
             return _mock.Object.FileSize(path);
         }
+
         public MockFileProcessor StubExists(bool isDir)
         {
             _mock.Setup(m => m.Exists(It.IsAny<string>())).Returns(isDir);
+            return this;
+        }
+
+        public MockFileProcessor StubGetFileStream(FileStream fstream)
+        {
+            _mock.Setup(m => m
+                .GetFileStream(It.IsAny<string>())).Returns(fstream);
             return this;
         }
 

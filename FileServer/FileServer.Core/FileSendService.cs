@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Text;
@@ -21,35 +22,57 @@ namespace FileServer.Core
 
             return serverProperties.CurrentDir != null &&
                    readers.FileProcess
-                   .Exists(serverProperties.CurrentDir + requestItem.Substring(1))
+                       .Exists(serverProperties.CurrentDir + requestItem.Substring(1))
                    && request.Contains("GET /");
         }
 
-        public IHttpResponse ProcessRequest(string request, IHttpResponse httpResponse,
+        public string ProcessRequest(string request,
+            IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
             var requestItem = CleanRequest(request).Substring(1);
             try
             {
-                var readers = (Readers)serverProperties
+                var readers = (Readers) serverProperties
                     .ServiceSpecificObjectsWrapper;
+                httpResponse.SendHeaders(new List<string>
+                {
+                    "HTTP/1.1 200 OK\r\n",
+                    "Cache-Control: no-cache\r\n",
+                    "Content-Type: application/octet-stream\r\n",
+                    "Content-Disposition: attachment"
+                    + "; filename = "
+                    + requestItem.Remove(0, requestItem.LastIndexOf('/') + 1)
+                    + "\r\n",
+                    "Content-Length: " + readers.FileProcess
+                        .FileSize(serverProperties.CurrentDir
+                                  + requestItem)
+                    + "\r\n\r\n"
+                });
 
-                httpResponse.ContentLength = readers.FileProcess
-                    .FileSize(serverProperties.CurrentDir 
-                    + requestItem);
-                httpResponse.HttpStatusCode = "200 OK";
-                httpResponse.CacheControl = "no-cache";
-                httpResponse.FilePath = serverProperties.CurrentDir + requestItem;
-                httpResponse.Filename = requestItem.Remove(0, requestItem.LastIndexOf('/') + 1);
-                httpResponse.ContentType = "application/octet-stream";
-                httpResponse.ContentDisposition = "attachment";
-                return httpResponse;
+                using (var fileStream = readers.FileProcess
+                    .GetFileStream(serverProperties.CurrentDir + requestItem))
+                {
+                    var buffer = new byte[1024];
+                    try
+                    {
+                        int bytesRead;
+                        while ((bytesRead = fileStream.Read(buffer, 0,
+                            1024)) > 0)
+                        {
+                            httpResponse.SendBody(buffer, bytesRead);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // ignored
+                    }
+                }
+
+                return "200 OK";
             }
             catch (Exception)
             {
-                httpResponse.HttpStatusCode = "403 Forbidden";
-                httpResponse.CacheControl = "no-cache";
-                httpResponse.ContentType = "text/html";
                 var errorPage = new StringBuilder();
                 errorPage.Append(@"<!DOCTYPE html>");
                 errorPage.Append(@"<html>");
@@ -59,10 +82,21 @@ namespace FileServer.Core
                                  "</h1>");
                 errorPage.Append(@"</body>");
                 errorPage.Append(@"</html>");
-                httpResponse.Body = errorPage.ToString();
-                httpResponse.ContentLength = Encoding
-                    .ASCII.GetByteCount(httpResponse.Body);
-                return httpResponse;
+                httpResponse.SendHeaders(new List<string>
+                {
+                    "HTTP/1.1 403 Forbidden\r\n",
+                    "Cache-Control: no-cache\r\n",
+                    "Content-Type: text/html\r\n",
+                    "Content-Length: "
+                    + (Encoding.ASCII.GetByteCount(errorPage.ToString())) +
+                    "\r\n\r\n"
+                });
+
+                httpResponse.SendBody(Encoding
+                    .ASCII.GetBytes(errorPage.ToString()),
+                    Encoding.ASCII.GetByteCount(errorPage.ToString()));
+
+                return "403 Forbidden";
             }
         }
 

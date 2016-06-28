@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Text;
@@ -14,7 +15,8 @@ namespace FileServer.Core
         private bool _headerRemoved;
         private string _packetBound;
 
-        public bool CanProcessRequest(string request, ServerProperties serverProperties)
+        public bool CanProcessRequest(string request,
+            ServerProperties serverProperties)
         {
             var requestItem = CleanRequest(request);
             if (requestItem != "/upload")
@@ -24,7 +26,7 @@ namespace FileServer.Core
             return true;
         }
 
-        public IHttpResponse ProcessRequest(string request, IHttpResponse httpResponse,
+        public string ProcessRequest(string request, IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
             return request.Contains("GET /") && request.IndexOf("GET /", StringComparison.Ordinal) == 0
@@ -32,7 +34,8 @@ namespace FileServer.Core
                 : PostRequest(request, httpResponse, serverProperties);
         }
 
-        private bool IsDirect(string request, ServerProperties serverProperties)
+        private bool IsDirect(string request,
+            ServerProperties serverProperties)
         {
             var requestItem = CleanRequest(request);
             var configManager = ConfigurationManager.AppSettings;
@@ -88,7 +91,7 @@ namespace FileServer.Core
         }
 
 
-        private IHttpResponse ProcessRequestWithPath(string data,
+        private string ProcessRequestWithPath(string data,
             IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
@@ -100,17 +103,14 @@ namespace FileServer.Core
                     || readers.FileProcess.Exists(_directory + _file))
                 )
             {
-                httpResponse.HttpStatusCode = "409 Conflict";
-                httpResponse.Body = PostWebPage("Could not make item");
-                httpResponse.ContentLength =
-                    Encoding.ASCII.GetByteCount(httpResponse.Body);
-                return httpResponse;
+                return SendHeaderAndBody("409 Conflict", httpResponse,
+                    PostWebPage("Could not make item"));
             }
             if (_directory != null && _file != null
                 && data.Contains("Content-Type: "))
                 return ProcessData(data, httpResponse,
                     serverProperties);
-            return httpResponse;
+            return "200 OK";
         }
 
 
@@ -142,12 +142,13 @@ namespace FileServer.Core
             var processedData = data;
             processedData = processedData.Substring(data.IndexOf("Content-Type: "
                 , StringComparison.Ordinal));
-            processedData = processedData.Substring(data.IndexOf("\r\n\r\n"
+            processedData = processedData.Substring(processedData.IndexOf("\r\n\r\n"
                 , StringComparison.Ordinal) + 4);
             return processedData;
         }
 
-        private IHttpResponse ProcessData(string data, IHttpResponse httpResponse,
+        private string ProcessData(string data,
+            IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
             var processedData = data;
@@ -158,31 +159,26 @@ namespace FileServer.Core
                 serverProperties);
         }
 
-        private IHttpResponse SaveFile(string data, 
+        private string SaveFile(string data,
             IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
             if (_file == "" || _directory == "")
             {
-                httpResponse.HttpStatusCode = "409 Conflict";
-                httpResponse.Body = PostWebPage("Could not make item");
-                httpResponse.ContentLength = Encoding
-                    .ASCII.GetByteCount(httpResponse.Body);
-                return httpResponse;
+                return SendHeaderAndBody("409 Conflict", httpResponse,
+                    PostWebPage("Could not make item"));
             }
             var sendData = data;
             if (sendData.EndsWith("\r\n------" + _packetBound + "--\r\n"))
                 sendData = sendData.Replace("\r\n------" + _packetBound + "--\r\n", "");
             serverProperties.Io.PrintToFile(sendData, _directory + _file);
-            httpResponse.HttpStatusCode = "201 Created";
-            httpResponse.Body = PostWebPage("Item Made");
-            httpResponse.ContentLength = Encoding
-                .ASCII.GetByteCount(httpResponse.Body);
-            return httpResponse;
+            return SendHeaderAndBody("201 Created", httpResponse,
+                PostWebPage("Item Made"));
         }
 
-        private IHttpResponse PostRequest(string request,
-            IHttpResponse httpResponse, ServerProperties serverProperties)
+        private string PostRequest(string request,
+            IHttpResponse httpResponse,
+            ServerProperties serverProperties)
         {
             if (!_directRequest)
                 return UsedUpLoad(request,
@@ -191,16 +187,17 @@ namespace FileServer.Core
                 httpResponse, serverProperties);
         }
 
-        private IHttpResponse DirectRequest(string request,
-            IHttpResponse httpResponse, ServerProperties serverProperties)
+        private string DirectRequest(string request,
+            IHttpResponse httpResponse,
+            ServerProperties serverProperties)
         {
             var data = request.Contains("POST /") && !_headerRemoved
                 ? RemoveHeaderAndSetPacketBound(request)
                 : request;
             if (data == "")
             {
-                httpResponse.HttpStatusCode = "201 Created";
-                return httpResponse;
+                return SendHeaderAndBody("201 Created", httpResponse,
+                    PostWebPage("Item Made"));
             }
             if (data.Contains(@"Content-Disposition: form-data; name=""file""")
                 || data.Contains(@"Content-Disposition: form-data; name=""fileToUpload"""))
@@ -209,8 +206,9 @@ namespace FileServer.Core
                 serverProperties);
         }
 
-        private IHttpResponse UsedUpLoad(string request,
-            IHttpResponse httpResponse, ServerProperties serverProperties)
+        private string UsedUpLoad(string request,
+            IHttpResponse httpResponse,
+            ServerProperties serverProperties)
         {
             var data = request.Contains("POST /upload HTTP/1.1\r\n")
                        && _directory == null && _file == null
@@ -218,8 +216,8 @@ namespace FileServer.Core
                 : request;
             if (data == "")
             {
-                httpResponse.HttpStatusCode = "201 Created";
-                return httpResponse;
+                return SendHeaderAndBody("201 Created", httpResponse,
+                    PostWebPage("Item Made"));
             }
             if ((data.Contains(@"Content-Disposition: form-data; name=""saveLocation""")
                  || data.Contains(@"Content-Disposition: form-data; name=""fileToUpload"""))
@@ -239,9 +237,11 @@ namespace FileServer.Core
         }
 
 
-        private IHttpResponse GetRequest(string request, IHttpResponse httpResponse)
+        private string GetRequest(string request,
+            IHttpResponse httpResponse)
         {
             var uploadPage = new StringBuilder();
+            uploadPage.Append(HtmlHeader());
             uploadPage.Append(@"<form action=""upload"" method=""post"" enctype=""multipart/form-data"">");
             uploadPage.Append(@"Select Save Location<br>");
             uploadPage.Append(@"<input type=""text"" name=""saveLocation""><br>");
@@ -249,14 +249,10 @@ namespace FileServer.Core
             uploadPage.Append(@"<input type=""file"" name=""fileToUpload"" id=""fileToUpload""><br>");
             uploadPage.Append(@"<input type=""submit"" value=""Submit"">");
             uploadPage.Append(@"</form>");
+            uploadPage.Append(HtmlTail());
 
-            httpResponse.HttpStatusCode = "200 OK";
-            httpResponse.CacheControl = "no-cache";
-            httpResponse.ContentType = "text/html";
-            httpResponse.Body = HtmlHeader() + UploadPage() + HtmlTail();
-            httpResponse.ContentLength = Encoding
-                .ASCII.GetByteCount(httpResponse.Body);
-            return httpResponse;
+            return SendHeaderAndBody("200 OK", httpResponse,
+                uploadPage.ToString());
         }
 
         private string UploadPage()
@@ -307,6 +303,25 @@ namespace FileServer.Core
         private string PostWebPage(string message)
         {
             return HtmlHeader() + message + "<br>" + UploadPage() + HtmlTail();
+        }
+
+        private string SendHeaderAndBody(string statusCode,
+            IHttpResponse response, string webPage)
+        {
+            response.SendHeaders(new List<string>
+            {
+                "HTTP/1.1 " + statusCode + "\r\n",
+                "Cache-Control: no-cache\r\n",
+                "Content-Type: text/html\r\n",
+                "Content-Length: "
+                + (Encoding.ASCII.GetByteCount(webPage)) +
+                "\r\n\r\n"
+            });
+
+            response.SendBody(Encoding
+                .ASCII.GetBytes(webPage),
+                Encoding.ASCII.GetByteCount(webPage));
+            return statusCode;
         }
     }
 }

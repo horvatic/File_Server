@@ -21,7 +21,7 @@ namespace FileServer.Test
             var mockDirSearch = new MockDirectoryProcessor();
             mockDirSearch.StubExists(true);
             var properties = new ServerProperties(@"c:/",
-                5555, new HttpResponse(), new ServerTime(),
+                5555, new ServerTime(),
                 new MockPrinter(),
                 new Readers
                 {
@@ -37,10 +37,10 @@ namespace FileServer.Test
         [InlineData("GET /form HTTP/1.1")]
         public void Cant_Process_form(string getRequest)
         {
-            var mockFileSearch = new MockFileProcessor();
-            mockFileSearch.StubExists(true);
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true);
             var properties = new ServerProperties(@"c:/",
-                5555, new HttpResponse(), new ServerTime(),
+                5555, new ServerTime(),
                 new MockPrinter(),
                 new Readers
                 {
@@ -60,7 +60,7 @@ namespace FileServer.Test
             var mockDirSearch = new MockDirectoryProcessor();
             mockDirSearch.StubExists(false);
             var properties = new ServerProperties(null,
-                5555, new HttpResponse(), new ServerTime(),
+                5555, new ServerTime(),
                 new MockPrinter(),
                 new Readers
                 {
@@ -87,7 +87,7 @@ namespace FileServer.Test
                 .StubConnect(true);
             zSocket = zSocket.StubAcceptObject(zSocket);
             var properties = new ServerProperties(@"Home", 8080,
-                new HttpResponse(), new ServerTime(),
+                new ServerTime(),
                 new MockPrinter(),
                 new Readers
                 {
@@ -95,7 +95,10 @@ namespace FileServer.Test
                     FileProcess = new MockFileProcessor()
                 });
             var directoryServer = new DirectoryService();
-            var httpResponse = directoryServer.ProcessRequest(getRequest, properties.DefaultResponse.Clone(), properties);
+            var statueCode = directoryServer
+                .ProcessRequest(getRequest,
+                    new HttpResponse(zSocket),
+                    properties);
 
             var correctOutput = new StringBuilder();
             correctOutput.Append(@"<!DOCTYPE html>");
@@ -110,7 +113,32 @@ namespace FileServer.Test
             correctOutput.Append(@"</body>");
             correctOutput.Append(@"</html>");
 
-            Assert.Equal(correctOutput.ToString(), httpResponse.Body);
+            zSocket.VerifySend(GetByte("HTTP/1.1 200 OK\r\n"),
+                GetByteCount("HTTP/1.1 200 OK\r\n"));
+            zSocket.VerifySend(GetByte("Cache-Control: no-cache\r\n"),
+                GetByteCount("Cache-Control: no-cache\r\n"));
+            zSocket.VerifySend(GetByte("Content-Type: text/html\r\n"),
+                GetByteCount("Content-Type: text/html\r\n"));
+            zSocket.VerifySend(GetByte("Content-Length: "
+                + GetByteCount(correctOutput.ToString())
+                + "\r\n\r\n"),
+                GetByteCount("Content-Length: "
+                + GetByteCount(correctOutput.ToString())
+                + "\r\n\r\n"));
+
+            zSocket.VerifySend(GetByte(correctOutput.ToString()),
+                GetByteCount(correctOutput.ToString()));
+
+        }
+
+        private int GetByteCount(string message)
+        {
+            return Encoding.ASCII.GetByteCount(message);
+        }
+
+        private byte[] GetByte(string message)
+        {
+            return Encoding.ASCII.GetBytes(message);
         }
     }
 }

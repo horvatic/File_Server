@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Text;
+using System.Collections.Generic;
 using Server.Core;
 
 namespace FileServer.Core
@@ -19,35 +19,57 @@ namespace FileServer.Core
                    && request.Contains("GET /");
         }
 
-        public IHttpResponse ProcessRequest(string request,
+        public string ProcessRequest(string request,
             IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
             var readers = (Readers) serverProperties
                 .ServiceSpecificObjectsWrapper;
             var requestItem = CleanRequest(request);
-            httpResponse.HttpStatusCode = "200 OK";
-            httpResponse.CacheControl = "no-cache";
-            httpResponse.FilePath
-                = serverProperties.CurrentDir + requestItem;
-            httpResponse.Filename
-                = requestItem.Remove(0,
-                    requestItem.LastIndexOf('/') + 1);
-
+            var headers = new List<string>
+            {"HTTP/1.1 200 OK\r\n", "Cache-Control: no-cache\r\n"};
             if (readers.FileProcess
-                .FileSize(httpResponse.FilePath) > 1000000)
+                .FileSize(serverProperties.CurrentDir + requestItem)
+                > 1000000)
             {
-                httpResponse.ContentType = "application/octet-stream";
-                httpResponse.ContentDisposition = "attachment";
+                headers.Add("Content-Type: application/octet-stream\r\n");
+                headers.Add("Content-Disposition: attachment"
+                            + "; filename = "
+                            + requestItem.Remove(0, requestItem.LastIndexOf('/') + 1)
+                            + "\r\n");
             }
             else
             {
-                httpResponse.ContentType = "application/pdf";
-                httpResponse.ContentDisposition = "inline";
+                headers.Add("Content-Type: application/pdf\r\n");
+                headers.Add("Content-Disposition: inline"
+                            + "; filename = "
+                            + requestItem.Remove(0, requestItem.LastIndexOf('/') + 1)
+                            + "\r\n");
             }
-            httpResponse.ContentLength =
-                readers.FileProcess.FileSize(httpResponse.FilePath);
-            return httpResponse;
+            headers.Add("Content-Length: " + readers.FileProcess
+                .FileSize(serverProperties.CurrentDir
+                          + requestItem)
+                        + "\r\n\r\n");
+            httpResponse.SendHeaders(headers);
+            using (var fileStream = readers.FileProcess
+                .GetFileStream(serverProperties.CurrentDir + requestItem))
+            {
+                var buffer = new byte[1024];
+                try
+                {
+                    int bytesRead;
+                    while ((bytesRead = fileStream.Read(buffer, 0,
+                        1024)) > 0)
+                    {
+                        httpResponse.SendBody(buffer, bytesRead);
+                    }
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+            }
+            return "200 OK";
         }
 
         private string CleanRequest(string request)

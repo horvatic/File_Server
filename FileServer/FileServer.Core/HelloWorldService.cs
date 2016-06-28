@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Text;
@@ -22,7 +23,7 @@ namespace FileServer.Core
                     && serverProperties.CurrentDir == null);
         }
 
-        public IHttpResponse ProcessRequest(string request,
+        public string ProcessRequest(string request,
             IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
@@ -34,10 +35,21 @@ namespace FileServer.Core
             helloWorldHtml.Append(@"<h1>Hello World</h1>");
             helloWorldHtml.Append(@"</body>");
             helloWorldHtml.Append(@"</html>");
-            httpResponse.Body = helloWorldHtml.ToString();
-            httpResponse.ContentLength =
-                Encoding.ASCII.GetByteCount(httpResponse.Body);
-            return httpResponse;
+            httpResponse.SendHeaders(new List<string>
+            {
+                "HTTP/1.1 200 OK\r\n",
+                "Cache-Control: no-cache\r\n",
+                "Content-Type: text/html\r\n",
+                "Content-Length: "
+                + (Encoding.ASCII
+                    .GetByteCount(helloWorldHtml.ToString())) +
+                "\r\n\r\n"
+            });
+
+            httpResponse.SendBody(Encoding
+                .ASCII.GetBytes(helloWorldHtml.ToString()),
+                Encoding.ASCII.GetByteCount(helloWorldHtml.ToString()));
+            return "200 OK";
         }
 
         private string CleanRequest(string request)

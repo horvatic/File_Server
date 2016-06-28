@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Text;
 using Server.Core;
 
@@ -10,7 +9,7 @@ namespace FileServer.Core
     {
         public bool CanProcessRequest(string request, ServerProperties serverProperties)
         {
-            var reader = (Readers)serverProperties
+            var reader = (Readers) serverProperties
                 .ServiceSpecificObjectsWrapper;
             var requestItem = CleanRequest(request);
             return serverProperties.CurrentDir != null &&
@@ -30,26 +29,26 @@ namespace FileServer.Core
             IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
-            var reader = (Readers)serverProperties
+            var reader = (Readers) serverProperties
                 .ServiceSpecificObjectsWrapper;
             var requestItem = CleanRequest(request);
-            return !requestItem.EndsWith(".vaticToMp4") 
-                ? SendHtml(requestItem, serverProperties, httpResponse) 
+            return !requestItem.EndsWith(".vaticToMp4")
+                ? SendHtml(requestItem, serverProperties, httpResponse)
                 : SendVideo(requestItem, serverProperties, httpResponse,
-                reader);
+                    reader);
         }
 
         private string SendHtml(string requestItem,
-             ServerProperties serverProperties,
-             IHttpResponse httpResponse)
+            ServerProperties serverProperties,
+            IHttpResponse httpResponse)
         {
             var html = HtmlHeader() +
-                                @"<video width=""320"" height=""240"" controls>" +
-                                @"<source src=""http://127.0.0.1:" + serverProperties.Port + "/" +
-                                requestItem.Substring(1) + ".vaticToMp4" +
-                                @""" type=""video/mp4"">" +
-                                "</video>"
-                                + HtmlTail();
+                       @"<video width=""320"" height=""240"" controls>" +
+                       @"<source src=""http://127.0.0.1:" + serverProperties.Port + "/" +
+                       requestItem.Substring(1) + ".vaticToMp4" +
+                       @""" type=""video/mp4"">" +
+                       "</video>"
+                       + HtmlTail();
             httpResponse.SendHeaders(new List<string>
             {
                 "HTTP/1.1 200 OK\r\n",
@@ -67,9 +66,9 @@ namespace FileServer.Core
         }
 
         private string SendVideo(string requestItem,
-             ServerProperties serverProperties,
-             IHttpResponse httpResponse,
-             Readers reader)
+            ServerProperties serverProperties,
+            IHttpResponse httpResponse,
+            Readers reader)
         {
             var filePath = serverProperties.CurrentDir
                            + requestItem.Substring(1).Replace(".vaticToMp4", "");
@@ -79,10 +78,10 @@ namespace FileServer.Core
                 "Cache-Control: no-cache\r\n",
                 "Content-Type: video/mp4\r\n",
                 "Content-Disposition: inline"
-                            + "; filename = "
-                            + requestItem.Remove(0, 
-                                requestItem.LastIndexOf('/') + 1)
-                            + "\r\n",
+                + "; filename = "
+                + requestItem.Remove(0,
+                    requestItem.LastIndexOf('/') + 1)
+                + "\r\n",
                 "Content-Length: "
                 + reader
                     .FileProcess.FileSize(filePath) +
@@ -92,11 +91,18 @@ namespace FileServer.Core
                 .GetFileStream(filePath))
             {
                 var buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = fileStream.Read(buffer, 0,
-                    1024)) > 0)
+                try
                 {
-                    httpResponse.SendBody(buffer, bytesRead);
+                    int bytesRead;
+                    while ((bytesRead = fileStream.Read(buffer, 0,
+                        1024)) > 0)
+                    {
+                        httpResponse.SendBody(buffer, bytesRead);
+                    }
+                }
+                catch (Exception)
+                {
+                    // ignored
                 }
             }
             return "200 OK";

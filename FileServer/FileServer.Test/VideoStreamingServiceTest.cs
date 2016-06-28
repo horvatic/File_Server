@@ -175,6 +175,37 @@ namespace FileServer.Test
             zSocket.VerifySend(GetByte("Content-Type: video/mp4\r\n"),
                 GetByteCount("Content-Type: video/mp4\r\n"));
         }
+
+        [Fact]
+        public void Send_Data_Of_Error_Video()
+        {
+            var guid = Guid.NewGuid();
+            var zSocket = new MockZSocket();
+            
+            var mockFileSearch = new MockFileProcessor()
+                .StubExists(true)
+                .StubGetFileStream(null)
+                .StubFileSize(2);
+
+            var properties = new ServerProperties(@"c:/",
+                5555, new ServerTime(),
+                new MockPrinter(),
+                new Readers()
+                {
+                    DirectoryProcess = new DirectoryProcessor(),
+                    FileProcess = mockFileSearch
+                });
+            var videoStream = new VideoStreamingService();
+
+            var statusCode = videoStream
+                .ProcessRequest("GET /" + guid + ".vaticToMp4 HTTP/1.1",
+                new HttpResponse(zSocket),
+                properties);
+
+            Assert.Equal("200 OK", statusCode);
+            
+        }
+
         private int GetByteCount(string message)
         {
             return Encoding.ASCII.GetByteCount(message);

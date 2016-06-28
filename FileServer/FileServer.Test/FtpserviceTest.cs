@@ -121,46 +121,6 @@ namespace FileServer.Test
                 GetByteCount(correctOutput.ToString()));
         }
 
-
-        //[Fact]
-        //public void Send_Data_Post_Request_Check_If_File_Exist_It_Dosnt()
-        //{
-        //    var io = new MockPrinter();
-        //    var zSocket = new MockZSocket();
-        //    var request = new StringBuilder();
-        //    request.Append("------WebKitFormBoundaryVfPQpsTmmlrqQLLg");
-        //    request.Append("Content-Disposition: form-data; name=\"saveLocation\"\r\n\r\n");
-        //    request.Append("u6t\r\n");
-        //    request.Append("------WebKitFormBoundaryqmueWCP8RQqHnEKH\r\n");
-        //    request.Append("Content-Disposition: form-data; name=\"fileToUpload\"; filename=\"blogBanner.png\"\r\n");
-        //    request.Append("Content-Type: image/png\r\n\r\n?PNG\r\n");
-        //    request.Append(
-        //        "IHDR");
-        //    request.Append("\r\n------WebKitFormBoundaryVfPQpsTmmlrqQLLg--");
-        //    var mockFileSearch = new MockFileProcessor();
-        //    mockFileSearch.StubExists(false);
-        //    var mockDirectoySearch = new MockDirectoryProcessor()
-        //        .StubExists(true);
-        //    var properties = new ServerProperties(@"c:/",
-        //        5555,
-        //        new ServerTime(),
-        //        io,
-        //        new Readers
-        //        {
-        //            DirectoryProcess = mockDirectoySearch,
-        //            FileProcess = mockFileSearch
-        //        });
-        //    var ftpservice = new Ftpservice();
-
-        //    var statusCode = ftpservice
-        //        .ProcessRequest(request.ToString(), 
-        //        new HttpResponse(zSocket), properties);
-
-        //    io.VerifyPrintToFile("?PNG\r\nIHDR", 
-        //        "c:/blogBanner.png");
-        //    //Assert.Equal("201 Created", httpResponces.HttpStatusCode);
-        //}
-
         [Fact]
         public void Send_Data_Post_Request_Check_If_File_Exist_It_Does()
         {

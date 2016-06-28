@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Text;
@@ -11,7 +12,7 @@ namespace FileServer.Core
         public bool CanProcessRequest(string request, ServerProperties serverProperties)
         {
             var fileProcessors =
-                ((Readers) serverProperties.ServiceSpecificObjectsWrapper);
+                ((Readers)serverProperties.ServiceSpecificObjectsWrapper);
             var requestItem = CleanRequest(request);
             var configManager = ConfigurationManager.AppSettings;
             if (configManager.AllKeys.Any(key => requestItem.EndsWith(configManager[key]))
@@ -23,22 +24,30 @@ namespace FileServer.Core
                    fileProcessors.DirectoryProcess.Exists(serverProperties.CurrentDir + requestItem.Substring(1));
         }
 
-        public IHttpResponse ProcessRequest(string request, IHttpResponse httpResponse,
+        public string ProcessRequest(string request, IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
             var fileProcessors =
-                ((Readers) serverProperties.ServiceSpecificObjectsWrapper);
+                ((Readers)serverProperties.ServiceSpecificObjectsWrapper);
             var requestItem = CleanRequest(request);
             requestItem = requestItem.Substring(1);
-            httpResponse.HttpStatusCode = "200 OK";
-            httpResponse.CacheControl = "no-cache";
-            httpResponse.ContentType = "text/html";
-            httpResponse.Body = DirectoryContents(requestItem,
+            var listing = DirectoryContents(requestItem,
                 fileProcessors.DirectoryProcess,
                 serverProperties.CurrentDir,
                 serverProperties.Port);
-            httpResponse.ContentLength = Encoding.ASCII.GetByteCount(httpResponse.Body);
-            return httpResponse;
+            httpResponse.SendHeaders(new List<string>
+            {
+                "HTTP/1.1 200 OK\r\n",
+                "Cache-Control: no-cache\r\n",
+                "Content-Type: text/html\r\n",
+                "Content-Length: "
+                + (GetByteCount(listing)) +
+                "\r\n\r\n"
+            });
+
+            httpResponse.SendBody(GetByte(listing),
+                GetByteCount(listing));
+            return "200 OK";
         }
 
         private string CleanRequest(string request)
@@ -96,6 +105,15 @@ namespace FileServer.Core
                                          + "</a>");
             }
             return HtmlHeader() + directoryContents + HtmlTail();
+        }
+        private int GetByteCount(string message)
+        {
+            return Encoding.ASCII.GetByteCount(message);
+        }
+
+        private byte[] GetByte(string message)
+        {
+            return Encoding.ASCII.GetBytes(message);
         }
     }
 }

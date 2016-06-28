@@ -13,5 +13,13 @@ namespace FileServer.Core
         {
             return File.Exists(path);
         }
+
+        public FileStream GetFileStream(string path)
+        {
+            return File.Open(path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read);
+        }
     }
 }

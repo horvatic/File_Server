@@ -29,6 +29,7 @@ namespace FileServer.Core
         public string ProcessRequest(string request, IHttpResponse httpResponse,
             ServerProperties serverProperties)
         {
+
             return request.Contains("GET /") && request.IndexOf("GET /", StringComparison.Ordinal) == 0
                 ? GetRequest(request, httpResponse)
                 : PostRequest(request, httpResponse, serverProperties);
@@ -196,8 +197,7 @@ namespace FileServer.Core
                 : request;
             if (data == "")
             {
-                return SendHeaderAndBody("201 Created", httpResponse,
-                    PostWebPage("Item Made"));
+                return "201 Created";
             }
             if (data.Contains(@"Content-Disposition: form-data; name=""file""")
                 || data.Contains(@"Content-Disposition: form-data; name=""fileToUpload"""))
@@ -216,8 +216,7 @@ namespace FileServer.Core
                 : request;
             if (data == "")
             {
-                return SendHeaderAndBody("201 Created", httpResponse,
-                    PostWebPage("Item Made"));
+                return "201 Created";
             }
             if ((data.Contains(@"Content-Disposition: form-data; name=""saveLocation""")
                  || data.Contains(@"Content-Disposition: form-data; name=""fileToUpload"""))
@@ -303,6 +302,20 @@ namespace FileServer.Core
         private string PostWebPage(string message)
         {
             return HtmlHeader() + message + "<br>" + UploadPage() + HtmlTail();
+        }
+
+        private string SendHeaderNoBody(IHttpResponse response, string statusCode)
+        {
+            response.SendHeaders(new List<string>
+            {
+                "HTTP/1.1 " + statusCode + "\r\n",
+                "Cache-Control: no-cache\r\n",
+                "Content-Type: text/html\r\n",
+                "Content-Length: 0"
+                +
+                "\r\n\r\n"
+            });
+            return statusCode;
         }
 
         private string SendHeaderAndBody(string statusCode,
